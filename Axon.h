@@ -5,7 +5,7 @@
 //                                                                            //
 //  Author: Andrew Hard                                                       //
 //  Email: ahard@cern.ch                                                      //
-//  Date: 24/02/2015                                                          //
+//  Date: 18/09/2015                                                          //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -16,27 +16,29 @@
 #include <stdio.h>
 #include "Neuron.h"
 
-class Axon 
-{
+class Axon {
   
  public:
   
-  Axon(double newWeight, Neuron *newNeuron);
+  Axon(double weight, Neuron *originNeuron, Neuron *terminalNeuron);
   ~Axon();
   
-  // Mutators:
-  void setWeight(double newWeight);
-  void setNeuron(Neuron newNeuron);
-  
-  // Accessors:
+  // Public Accessors:
   double getWeight();
-  Neuron* getNeuron();
+  Neuron* getOriginNeuron();
+  Neuron* getTerminalNeuron();
+  
+  // Public Mutators:
+  void setWeight(double weight);
+  void setOriginNeuron(Neuron *neuron);
+  void setTerminalNeuron(Neuron *neuron);
   
  private:
   
   // Member objects:
-  double weight;
-  Neuron *neuron;
+  double m_weight;
+  Neuron *m_originNeuron;
+  Neuron *m_terminalNeuron;
   
 };
 

@@ -24,22 +24,25 @@ class NeuralNetwork
 
  public:
   
-  NeuralNetwork();
+  NeuralNetwork(int nInputs, int nHiddenLayers, int nNodesPerLayer);
   ~NeuralNetwork();
   
   // Mutators:
-  void addNewLayer(int nodesPerLayer);
-  void addSingleNode(int layer, Neuron *newNeuron);
-  void train();
+  void addLayer(int nodesPerLayer);
   
   // Accessors:
-  std::vector<Neuron> getLayer();
-  std::vector<Neuron> getNetwork();
-  double getResponse();
+  std::vector<Neuron*> getLayer(int layerIndex);
+  double getNetworkResponse(std::vector<double> inputs);
   
  private:
   
-  void backPropagate();
+  int m_nInputs;
+  int m_nHiddenLayers;
+  int m_nNodesPerLayer;
+  
+  // Keep pointers to all neurons and connections:
+  std::vector<Axon*> m_axons;
+  std::vector<Neuron*> m_neurons;
   
 };
 

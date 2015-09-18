@@ -4,179 +4,139 @@
 //                                                                            //
 //  Created: Andrew Hard                                                      //
 //  Email: ahard@cern.ch                                                      //
-//  Date: 24/02/2015                                                          //
+//  Date: 18/09/2015                                                          //
 //                                                                            //
 //  This class represents a neuron in a neural network. The connections       //
-//  are to upstream ancestor nodes that fire before the given node.           //
+//  are to upstream and downstream nodes.                                     //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "Neuron.h"
 
 /**
+   -----------------------------------------------------------------------------
    Neuron constructor, with option to set the threshold function:
+   @param function - The activation function for the neuron: "logistic", "tanh"
  */
-Neuron::Neuron(std::vector<*Axon> *newConnections, std::string newFunction) {
-  randomBit = false;
-  responseBit = false;
-  response = 0.0;
-  connections = newConnections;
-  function = newFunction;
+Neuron::Neuron(std::string function) {
+  m_response = 0.0;
+  m_downstreamConnections.clear();
+  m_upstreamConnections.clear();
+  m_function = function;
   return;
 }
 
 /**
-   Neuron constructor.
- */
-Neuron::Neuron(std::vector<*Axon> *newConnections) {
-  Neuron(newConnections, "logistic");
-  return;
-}
-
-/**
-   Neuron default constructor.
+   -----------------------------------------------------------------------------
+   Add a single downstream connection.
+   @param axon - A single downstream connection.
 */
-Neuron::Neuron() {
-  std::vector<*Axon> newConnections = new std::vector<*Axon>();
-  newConnections->clear();
-  Neuron(newConnections, "logistic");
-  return;
+void Neuron::addDownstreamConnection(Axon *axon) {
+  if (!axon) {
+    std::cout << "Neuron: ERROR! axon is null" << std::endl;
+    exit(0);
+  }
+  m_downstreamConnections->push_back(axon);
 }
 
 /**
-   Add a connection to another neuron.
+   -----------------------------------------------------------------------------
+   Add multiple downstream connections.
+   @param axons - A vector of downstream connections.
 */
-void Neuron::addConnection(Axon *newAxon) {
-  connections->push_back(newAxon);
-}
-
-/**
-   Sets the random and response bits false for this Neuron and all upstream
-   Neurons as well. This could fail for feedback loops...
- */
-void Neuron::clearBits() {
-  randomBit = false;
-  responseBit = false;
-  for (int i_a = 0; i_a < (int)connections->size(); i_a++) {
-    connections[i_a]->getNeuron()->clearBits();
+void Neuron::addDownstreamConnection(std::vector<Axon*> axons) {
+  std::vector<Axon*>::iterator axonIter;
+  for (axonIter = axons.begin(); axonIter != axons.end(); axonIter++) {
+    addDownstreamConnection(*axonIter);
   }
 }
 
 /**
-   Randomizes weights feeding into this node only.
+   -----------------------------------------------------------------------------
+   Add a single upstream connection.
+   @param axon - A single upstream connection.
 */
-void randomizeWeights() {
-  for (int i_a = 0; i_a < (int)connections->size(); i_a++) {
-    double randomWeight = ((((double)(rand() % 20)) - 10.0) / 10.0);
-    connections[i_a]->setWeight(randomWeight);
-    if (!connections[i_a]->getNeuron()->isRandomized()) {
-      connections[i_a]->getNeuron()->randomizeWeights();
-    }
+void Neuron::addUpstreamConnection(Axon *axon) {
+  if (!axon) {
+    std::cout << "Neuron: ERROR! axon is null" << std::endl;
+    exit(0);
   }
-  randomBit = true;
+  m_upstreamConnections->push_back(axon);
 }
 
 /**
-   Clear the list of connected neurons.
+   -----------------------------------------------------------------------------
+   Add multiple upstream connections.
+   @param axons - A vector of upstream connections.
 */
-void Neuron::removeAllConnections() {
-  connections->clear();
-}
-
-/**
-   Remove a given pointer to a neuron from the connections.
- */
-void Neuron::removeConnection(Axon *oldAxon) {
-  int pos = -1;
-  for (int i_a = 0; i_a < (int)connections->size(); i_a++) {
-    if (connections[i_a] == oldAxon) {
-      pos = i_a;
-      break;
-    }
-  }
-  if (pos != -1) {
-    connections->erase(connections.begin()+pos);
+void Neuron::addUpstreamConnection(std::vector<Axon*> axons) {
+  for (std::vector<Axon*>::iterator axonIter = axons.begin();
+       axonIter != axons.end(); axonIter++) {
+    addUpstreamConnection(*axonIter);
   }
 }
 
 /**
-   Resets the Neuron response.
-*/ 
-void Neuron::setResponse(double newResponse) {
-  response = newResponse;
-}
-
-/**
-   Get the response of the Neuron to its inputs, recursively by getting 
-   the responses for all previous neurons as well.
+   -----------------------------------------------------------------------------
+   @returns - A vector of downstream connections for the Neuron.
 */
-double Neuron::evaluateResponse() {
-  double weightSum = 0.0;
-  // loop over connections, add weighted responses:
-  for (int i_a = 0; i_a < (int)connections->size(); i_a++) {
-    
-    // if ancestor node's response has already been evaluated, no need to call
-    // this method recursively for ancestor nodes:
-    if (connections[i_a]->getNeuron()->hasResponse()) {
-      weightSum += (connections[i_a]->getNeuron()->getStaticResponse() *
-		    connections[i_a]->->getWeight());
-    }
-    // ancestor node's response has not already been evaluated. call this
-    // method recursively. 
-    else {
-      weightSum += (connections[i_a]->getNeuron()->evaluateResponse() *
-		    connections[i_a]->->getWeight());
-    }
-  }
-  
-  response = thresholdFunction(weightSum);
-  return response;
+std::vector<Axon*> Neuron::getDownstreamConnections() {
+  return m_downstreamConnections;
 }
 
 /**
-   Returns the number of predecessor connections for the Neuron.
+   -----------------------------------------------------------------------------
+   @returns - The number of downstream connections for the Neuron.
 */
-int Neuron::getNConnections() {
-  if (connections == NULL) {
-    return 0;
+int Neuron::getNDownstreamConnections() {
+  return (int)m_downstreamConnections.size();
+}
+
+/**
+   -----------------------------------------------------------------------------
+   @returns - The number of upstream connections for the Neuron.
+*/
+int Neuron::getNUpstreamConnections() {
+  return (int)m_upstreamConnections.size();
+}
+
+/**
+   -----------------------------------------------------------------------------
+   Evaluate the neuron response based on the current input connection weights.
+   @returns - The neuron response.
+*/
+double Neuron::getResponse() {
+  double response = 0.0;
+  // Loop over input connections
+  for (std::vector<Axon*>::iterator axonIter = m_upstreamConnections.begin();
+       axonIter != m_upstreamConnections.end(); axonIter++) {
+    // sum the input weights:
+    response += axonIter->getWeight();
   }
-  else {
-    return (int)connections->size();
-  }
+  // Then get the result of the threshold function:
+  return thresholdFunction(response);
 }
 
 /**
-   Simply checks the activated bool object. Does not propagate the checking
-   throughout the entire network structure like isActivated(). This method is 
-   much faster for simple status checks.
- */
-double Neuron::getStaticResponse() {
-  return response;
+   -----------------------------------------------------------------------------
+   @returns - A vector of upstream connections for the Neuron.
+*/
+std::vector<Axon*> Neuron::getUpstreamConnections() {
+  return m_upstreamConnections;
 }
 
 /**
-   Returns whether the response has been updated in the current iteration.
- */
-bool Neuron::hasResponse() {
-  return responseBit;
-}
-
-/**
-   Returns whether the response has been randomized in this iteration.
- */
-bool Neuron::isRandom() {
-  return randomBit;
-}
-
-/**
+   -----------------------------------------------------------------------------
    Evaluate the threshold function to see whether the neuron should fire.
- */
+   @param sum - The sum of weights of the input connections.
+   @returns - The response for a given sum and function.
+*/
 double Neuron::thresholdFunction(double sum) {
   double result = 0;
-  if (function=="logistic") {
+  if (m_function=="logistic") {
     result = 1.0 / (1 + exp(-1.0*sum));
   }
-  else if(function=="tanh") {
+  else if(m_function=="tanh") {
     result = (exp(sum) - exp(-1.0*sum)) / (exp(sum) + exp(-1.0*sum));
   }
   else {

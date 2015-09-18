@@ -5,7 +5,7 @@
 //                                                                            //
 //  Author: Andrew Hard                                                       //
 //  Email: ahard@cern.ch                                                      //
-//  Date: 24/02/2015                                                          //
+//  Date: 18/09/2015                                                          //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -18,43 +18,39 @@
 #include <math.h>
 #include "Axon.h"
 
-class Neuron 
-{
+// NOTE: NEED SPECIAL INFO FOR FIRST LAYER OR LEAF NODE.
+
+class Neuron {
 
  public:
   
-  Neuron(std::vector<*Axon> *newConnections, std::string newFunction);
-  Neuron(std::vector<*Axon> *newConnections);
-  Neuron();
+  Neuron(int layerIndex, std::string function);
   ~Neuron();
   
-  // Mutators:
-  void addConnection(Axon *newAxon);
-  void clearBits();
-  void randomizeWeights();
-  void removeAllConnections();
-  Axon* removeConnection(Axon *oldAxon);
-  void setResponse(double newResponse);
+  // Public Accessors:
+  int getLayerIndex();
+  double getResponse();
+  int getNDownstreamConnections();
+  int getNUpstreamConnections();
+  std::vector<Axon*> getDownstreamConnections();
+  std::vector<Axon*> getUpstreamConnections();
   
-  // Accessors:
-  double evaluateResponse();
-  int getNConnections();
-  double getStaticResponse();
-  bool hasResponse();
-  bool isRandom();
+  // Public Mutators:
+  void addDownstreamConnection(Axon *axon);
+  void addDownstreamConnection(std::vector<Axon*> axons);
+  void addUpstreamConnection(Axon *axon);
+  void addUpstreamConnection(std::vector<Axon*> axons);
+  void setLayerIndex(int layerIndex);
   
  private:
   
-  // Member objects:
-  bool randomBit;
-  bool responseBit;
-  
-  double response;
-  std::vector<*Axon> *connections;
-  std::string function;
-  
-  // private functions:
+  // Private functions:
   double thresholdFunction(double sum);
+  
+  // Member objects:
+  std::vector<*Axon> m_downstreamConnections;
+  std::vector<*Axon> m_upstreamConnections;
+  std::string m_function;
   
 };
 

@@ -4,47 +4,83 @@
 //                                                                            //
 //  Created: Andrew Hard                                                      //
 //  Email: ahard@cern.ch                                                      //
-//  Date: 24/02/2015                                                          //
+//  Date: 18/09/2015                                                          //
 //                                                                            //
-//  This class represents a connection from one neuron to another.            //
+//  This class represents a weighted connection from one neuron to another.   //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "Axon.h"
 
 /**
-   Axon constructor.
+   -----------------------------------------------------------------------------
+   Axon constructor. Creates a connection between two nodes with a weight.
+   @param weight - The new connection weight.
+   @param neuron - The upstream neuron for the connection.
+   @param neuron - The downstream neuron for the connection.
  */
-Axon::Axon(double newWeight, Neuron *newNeuron) {
-  weight = newWeight;
-  neuron = newNeuron;
+Axon::Axon(double weight, Neuron *originNeuron, Neuron *terminalNeuron) {
+  setWeight(weight);
+  setOriginNeuron(originNeuron);
+  setTerminalNeuron(terminalNeuron);
   return;
 }
 
 /**
+   -----------------------------------------------------------------------------
    Set the weight of the connection.
+   @param weight - The new connection weight.
 */
-void Axon::setWeight(double newWeight) {
-  weight = newWeight;
+void Axon::setWeight(double weight) {
+  m_weight = weight;
 }
 
 /**
-   Set the connected neuron.
+   -----------------------------------------------------------------------------
+   Set the upstream neuron.
+   @param neuron - The upstream neuron for the connection.
 */
-void Axon::setNeuron(Neuron *newNeuron) {
-  neuron = newNeuron;
+void Axon::setOriginNeuron(Neuron *neuron) {
+  if (!neuron) {
+    std::cout << "Axon: ERROR! origin neuron is null." << std::endl;
+    exit(0);
+  }
+  m_originNeuron = neuron;
 }
 
 /**
-   Get the weight of the connection.
+   -----------------------------------------------------------------------------
+   Set the downstream neuron.
+   @param neuron - The downstream neuron for the connection.
+*/
+void Axon::setTerminalNeuron(Neuron *neuron) {
+  if (!neuron) {
+    std::cout << "Axon: ERROR! origin neuron is null." << std::endl;
+    exit(0);
+  }
+  m_terminalNeuron = neuron;
+}
+
+/**
+   -----------------------------------------------------------------------------
+   @returns - The weight of the connection.
 */
 double Axon::getWeight() {
-  return weight;
+  return m_weight;
 }
 
 /**
-   Get a pointer to the connected neuron.
+   -----------------------------------------------------------------------------
+   @returns - A pointer to the upstream connected neuron.
 */
-Neuron* Axon::getNeuron() {
-  return neuron;
+Neuron* Axon::getOriginNeuron() {
+  return m_originNeuron;
+}
+
+/**
+   -----------------------------------------------------------------------------
+   @returns - A pointer to the downstream connected neuron.
+*/
+Neuron* Axon::getTerminalNeuron() {
+  return m_terminalNeuron;
 }
