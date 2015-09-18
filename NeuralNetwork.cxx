@@ -4,7 +4,7 @@
 //                                                                            //
 //  Created: Andrew Hard                                                      //
 //  Email: ahard@cern.ch                                                      //
-//  Date: 24/02/2015                                                          //
+//  Date: 18/09/2015                                                          //
 //                                                                            //
 //  This class creates a neural network using the Neuron and Axon classes.    //
 //  It contains methods for constructing, training, and testing a BNPP.       //
@@ -67,7 +67,7 @@ void NeuralNetwork::addLayer(int layerIndex, int nodesPerLayer) {
    @param layerIndex - The index of the layer.
    @returns - A vector of Neurons in the specified layer.
 */
-std::vector<Neuron*> getLayer(int layerIndex) {
+std::vector<Neuron*> NeuralNetwork::getLayer(int layerIndex) {
   std::vector<Neuron*> layer; layer.clear();
   // Loop over all neurons stored and return the ones with the proper layer idx.
   for (std::vector<Neuron*>::iterator neuroIter = m_neurons.begin();
@@ -79,8 +79,9 @@ std::vector<Neuron*> getLayer(int layerIndex) {
 
 /**
    -----------------------------------------------------------------------------
+   Retrieve the network response based on the given inputs.
 */
-double getNetworkResponse(std::vector<double> inputs) {
+double NeuralNetwork::getNetworkResponse(std::vector<double> inputs) {
   if ((int)inputs.size() != m_nInputs) {
     std::cout << "NeuralNetwork; ERROR! Wrong size of inputs." << std::endl;
   }
