@@ -42,8 +42,10 @@ class Neuron {
   void addDownstreamConnection(std::vector<Axon*> axons);
   void addUpstreamConnection(Axon *axon);
   void addUpstreamConnection(std::vector<Axon*> axons);
+  void backPropagation();
   void clearDelta();
   void clearResponse();
+  void setBiasNode(bool biasNode);
   void setLayerIndex(int layerIndex);
   void setResponse(double response);
   void setResponseWithSum(double sum);
@@ -56,8 +58,8 @@ class Neuron {
   double thresholdFunction(double sum);
   
   // Member objects:
-  std::vector<*Axon> m_downstreamConnections;
-  std::vector<*Axon> m_upstreamConnections;
+  std::vector<Axon*> m_downstreamConnections;
+  std::vector<Axon*> m_upstreamConnections;
   std::string m_function;
   
   bool m_biasNode;

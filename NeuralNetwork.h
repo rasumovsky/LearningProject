@@ -12,6 +12,7 @@
 #ifndef NeuralNetwork_h
 #define NeuralNetwork_h
 
+#include <cstdlib>
 #include <stdlib.h>
 #include <stdio.h>
 #include <vector>
@@ -24,19 +25,27 @@ class NeuralNetwork
 
  public:
   
-  NeuralNetwork(int nInputs, int nHiddenLayers, int nNodesPerLayer);
+  NeuralNetwork(int nInputs, int nOutputs, int nHiddenLayers, 
+		int nNodesPerLayer);
   ~NeuralNetwork();
   
-  // Mutators:
-  void addLayer(int nodesPerLayer);
-  
   // Accessors:
+  std::vector<Neuron*> getBiasNodes();
+  std::vector<Neuron*> getInputLayer();
+  std::vector<Neuron*> getOutputLayer();
   std::vector<Neuron*> getLayer(int layerIndex);
-  double getNetworkResponse(std::vector<double> inputs);
   
+  // Mutators:
+  void addLayer(int layerIndex, int nodesPerLayer, string function);
+  std::vector<double> getNetworkResponse(std::vector<double> vars);
+  void randomizeNetworkWeights();
+  void setNetworkTargets(std::vector<double> targets);
+  void updateNetworkViaBP();
+
  private:
   
   int m_nInputs;
+  int m_nOutputs;
   int m_nHiddenLayers;
   int m_nNodesPerLayer;
   

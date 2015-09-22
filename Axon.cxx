@@ -107,10 +107,11 @@ void Axon::setWeight(double weight) {
 
 /**
    -----------------------------------------------------------------------------
-   Change the weight based on training.
+   Change the weight based on training. Relies on previous neuron's response and
+   subsequent neuron's delta. 
+   @returns - The updated weight value for the Axon connection.
 */
 double Axon::trainWeight() {
-  // NEED TO THINK ABOUT THIS
   double o_i = m_originNeuron->getResponse();//o_i
   double delta_j = m_terminalNeuron->getDelta();//delta_j
   double deltaW_ij = -1.0 * m_rate * delta_j * o_i;

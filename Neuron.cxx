@@ -17,12 +17,12 @@
 /**
    -----------------------------------------------------------------------------
    Neuron constructor, with option to set the threshold function:
+   @param layerIndex - The index of the layer in which this Neuron resides.
    @param function - The activation function for the neuron: "sigmoid", "tanh",
    "linear", all defined for x:[-1,+1], y:[-1,+1].
-   @param biasNode - True iff this node is a bias node.
 */
-Neuron::Neuron(std::string function, bool biasNode) {
-  m_biasNode = biasNode;
+Neuron::Neuron(int layerIndex, std::string function) {
+  setBiasNode(false);
   m_hasResponse = false;
   m_response = 0.0;
   m_responseDerivative = 0.0;
@@ -94,6 +94,28 @@ void Neuron::addUpstreamConnection(std::vector<Axon*> axons) {
 
 /**
    -----------------------------------------------------------------------------
+   This algorithm recursively calls itself on ancestor (upstream) Neurons. Once
+   it reaches a bias node or input node with no prior weights or nodes, it 
+   calls the getDelta() function, which recursively updates the weights and 
+   deltas for the following graph. Flags prevent duplication of calculation and
+   also conflicts arising from weight reassignment. 
+*/
+void backPropagation() {
+  if (isBiasNode() || isInputNode()) {
+    getDelta();
+  }
+  // Call back-propagation on previous neuron layer.
+  else {
+    // Then update the weights for the following connections.
+    for (std::vector<Axon*>::iterator axonIter = m_upstreamConnections.begin(); 
+	 axonIter != m_upstreamConnections.end(); axonIter++) {
+      axonIter->getOriginNeuron()->backPropagation();
+    }
+  }
+}
+
+/**
+   -----------------------------------------------------------------------------
    Clears the delta value information, which is stored for speed. Note: this 
    algorithm is recursive. It will clear the delta values for all downstream 
    (predecessor) Neurons.
@@ -133,7 +155,8 @@ void Neuron::clearResponse() {
 
 /**
    -----------------------------------------------------------------------------
-   Get the delta value associated with this Neuron for back-propagation.
+   Get the delta value associated with this Neuron for back-propagation. Relies
+   on the downstream connection weights and downstream connection deltas.
 */
 double Neuron::getDelta() {
   m_delta = 0.0;
@@ -149,9 +172,6 @@ double Neuron::getDelta() {
     double currSum = 0.0;
     for (int i_c = 0; i_c < (int)m_downstreamConnections.size(); i_c++) {
       double currWeight = m_downstreamConnections[i_c]->getWeight();
-      
-      // BIG PROBLEM BELOW! IT RELIES ON WEIGHTS THAT GET UPDATED! NEED TO SET A
-      // FLAG TO CHECK WHETHER IT HAS JUST BEEN UPDATED. 
       double currDelta
 	= (m_downstreamConnections[i_c])->getTerminalNeuron()->getDelta();
       currSum += (currWeight * currDelta);
@@ -160,6 +180,11 @@ double Neuron::getDelta() {
     m_delta = (currSum * derivative);
   }
   m_hasDelta = true;
+  // Then update the downstream weights:
+  for (std::vector<Axon*>::iterator axonIter = m_downstreamConnections.begin(); 
+       axonIter != m_downstreamConnections.end(); axonIter++) {
+    axonIter->trainWeight();
+  }
   return m_delta;
 }
 
@@ -270,6 +295,15 @@ bool Neuron::isInputNode() {
 */
 bool Neuron::isOutputNode() {
   return (getNDownstreamConnections() == 0);
+}
+
+/**
+   -----------------------------------------------------------------------------
+   Set this node to be a bias node or not.
+   @param biasNode - True iff. this node should be a bias node.
+*/
+void Neuron::setBiasNode(bool biasNode) {
+  m_biasNode = biasNode;
 }
 
 /**
