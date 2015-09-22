@@ -18,8 +18,6 @@
 #include <math.h>
 #include "Axon.h"
 
-// NOTE: NEED SPECIAL INFO FOR FIRST LAYER OR LEAF NODE.
-
 class Neuron {
 
  public:
@@ -28,12 +26,16 @@ class Neuron {
   ~Neuron();
   
   // Public Accessors:
+  void clearResponse();
   int getLayerIndex();
   double getResponse();
   int getNDownstreamConnections();
   int getNUpstreamConnections();
   std::vector<Axon*> getDownstreamConnections();
   std::vector<Axon*> getUpstreamConnections();
+  bool isBiasNode();
+  bool isInputNode();
+  bool isOutputNode();
   
   // Public Mutators:
   void addDownstreamConnection(Axon *axon);
@@ -51,6 +53,10 @@ class Neuron {
   std::vector<*Axon> m_downstreamConnections;
   std::vector<*Axon> m_upstreamConnections;
   std::string m_function;
+  
+  bool m_biasNode;
+  bool m_hasResponse;
+  bool m_response;
   
 };
 
