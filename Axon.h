@@ -24,18 +24,22 @@ class Axon {
   ~Axon();
   
   // Public Accessors:
-  double getWeight();
+  double getLearningRate();
   Neuron* getOriginNeuron();
   Neuron* getTerminalNeuron();
+  double getWeight();
   
   // Public Mutators:
-  void setWeight(double weight);
+  void setLearningRate(double alpha);
   void setOriginNeuron(Neuron *neuron);
   void setTerminalNeuron(Neuron *neuron);
+  void setWeight(double weight);
+  double trainWeight();
   
  private:
   
   // Member objects:
+  double m_rate;
   double m_weight;
   Neuron *m_originNeuron;
   Neuron *m_terminalNeuron;

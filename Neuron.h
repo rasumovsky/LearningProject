@@ -19,14 +19,14 @@
 #include "Axon.h"
 
 class Neuron {
-
+  
  public:
   
   Neuron(int layerIndex, std::string function);
   ~Neuron();
   
   // Public Accessors:
-  void clearResponse();
+  double getDelta();
   int getLayerIndex();
   double getResponse();
   int getNDownstreamConnections();
@@ -42,11 +42,17 @@ class Neuron {
   void addDownstreamConnection(std::vector<Axon*> axons);
   void addUpstreamConnection(Axon *axon);
   void addUpstreamConnection(std::vector<Axon*> axons);
+  void clearDelta();
+  void clearResponse();
   void setLayerIndex(int layerIndex);
+  void setResponse(double response);
+  void setResponseWithSum(double sum);
+  void setTarget(double target);
   
  private:
   
   // Private functions:
+  double thresholdDerivative(double sum);
   double thresholdFunction(double sum);
   
   // Member objects:
@@ -56,7 +62,10 @@ class Neuron {
   
   bool m_biasNode;
   bool m_hasResponse;
-  bool m_response;
+  double m_response;
+  double m_responseDerivative;
+  bool m_hasDelta;
+  double m_delta;
   
 };
 

@@ -6,8 +6,9 @@
 //  Email: ahard@cern.ch                                                      //
 //  Date: 18/09/2015                                                          //
 //                                                                            //
-//  This class represents a neuron in a neural network. The connections       //
-//  are to upstream and downstream nodes.                                     //
+//  This class represents a node in a neural network. The connections are to  //
+//  upstream and downstream nodes. Activation functions are included, as well //
+//  as the derivatives, response, and back-propagation utilities.             //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -24,9 +25,13 @@ Neuron::Neuron(std::string function, bool biasNode) {
   m_biasNode = biasNode;
   m_hasResponse = false;
   m_response = 0.0;
+  m_responseDerivative = 0.0;
+  m_hasDelta = false;
+  m_delta = 0.0;
   m_downstreamConnections.clear();
   m_upstreamConnections.clear();
   m_function = function;
+  m_target = 0.0;
   return;
 }
 
@@ -89,6 +94,25 @@ void Neuron::addUpstreamConnection(std::vector<Axon*> axons) {
 
 /**
    -----------------------------------------------------------------------------
+   Clears the delta value information, which is stored for speed. Note: this 
+   algorithm is recursive. It will clear the delta values for all downstream 
+   (predecessor) Neurons.
+*/
+void Neruon::clearDelta() {
+  if (m_hasDelta) {
+    m_hasDelta = false;
+    m_delta = 0.0;
+    // Then recursively clear predecesor Neurons' deltas:
+    std::vector<Axon*> predecessorConnections = getDownstreamConnections();
+    for (std::vector<Axon*>::iterator axonIter = predecessorConnections.begin();
+	 axonIter != predecessorConnections.end(); axonIter++) {
+      axonIter->getTerminalNeuron()->clearDelta();
+    }
+  }
+}
+
+/**
+   -----------------------------------------------------------------------------
    Clears the response information, which is only stored for speed. Note: this
    algorithm is recursive. It will clear the response for all upstream
    (ancestor) Neurons.
@@ -97,13 +121,46 @@ void Neuron::clearResponse() {
   if (m_hasResponse) {
     m_hasResponse = false;
     m_response = 0.0;
+    m_responseDerivative = 0.0;
     // Then recursively clear ancestor Neurons' responses. 
     std::vector<Axon*> ancestorConnections = getUpstreamConnections();
-    for (std::vector<Axon*> axonIter = ancestorConnections.begin();
+    for (std::vector<Axon*>::iterator axonIter = ancestorConnections.begin();
 	 axonIter != ancestorConnections.end(); axonIter++) {
-      axonIter->getOriginNeuron->clearResponse();
+      axonIter->getOriginNeuron()->clearResponse();
     }
   }    
+}
+
+/**
+   -----------------------------------------------------------------------------
+   Get the delta value associated with this Neuron for back-propagation.
+*/
+double Neuron::getDelta() {
+  m_delta = 0.0;
+  double derivative = getResponseDerivative();
+  if (m_hasDelta) {
+    return m_delta;
+  }
+  else if (isOutputNode()) {
+    m_delta = ((m_response - m_target) * derivative);
+  }
+  else {
+    // first sum up:
+    double currSum = 0.0;
+    for (int i_c = 0; i_c < (int)m_downstreamConnections.size(); i_c++) {
+      double currWeight = m_downstreamConnections[i_c]->getWeight();
+      
+      // BIG PROBLEM BELOW! IT RELIES ON WEIGHTS THAT GET UPDATED! NEED TO SET A
+      // FLAG TO CHECK WHETHER IT HAS JUST BEEN UPDATED. 
+      double currDelta
+	= (m_downstreamConnections[i_c])->getTerminalNeuron()->getDelta();
+      currSum += (currWeight * currDelta);
+    }
+    // Then multiply sum by derivative:
+    m_delta = (currSum * derivative);
+  }
+  m_hasDelta = true;
+  return m_delta;
 }
 
 /**
@@ -139,6 +196,7 @@ int Neuron::getNUpstreamConnections() {
 double Neuron::getResponse() {
   if (isBiasNode()) {
     m_response = 1.0;
+    m_responseDerivative = 0.0;
   }
   else if (isInputNode()) {
     if (!m_hasResponse) {
@@ -147,20 +205,34 @@ double Neuron::getResponse() {
     }
   }
   else if (!m_hasResponse) {
-    m_response = 0.0;
+    double currSum = 0.0;
     // Loop over input connections
     for (std::vector<Axon*>::iterator axonIter = m_upstreamConnections.begin();
 	 axonIter != m_upstreamConnections.end(); axonIter++) {
       // sum the input weights:
       double inputWeight = axonIter->getWeight();
       double inputResponse = axonIter->getOriginNeuron()->getResponse();
-      response += (inputWeight * inputResponse);
+      currSum += (inputWeight * inputResponse);
     }
     // Then get the result of the threshold function:
-    m_response = thresholdFunction(m_response);
+    m_response = thresholdFunction(currSum);
+    m_responseDerivative = thresholdDerivative(currSum);
   }
   m_hasResponse = true;
   return m_response;
+}
+
+/**
+   -----------------------------------------------------------------------------
+   Check to see that a response (and its derivative) have been calculated. Then
+   return the derivative. Note that the getResponse() function that is called is
+   recursive. 
+*/
+double Neuron::getResponseDerivative() {
+  if (!m_hasResponse()) {
+    getResponse();
+  }
+  return m_responseDerivative;
 }
 
 /**
@@ -174,6 +246,7 @@ std::vector<Axon*> Neuron::getUpstreamConnections() {
 /**
    -----------------------------------------------------------------------------
    Check whether this node is a (constant) bias node.
+   @returns - True iff neuron is a bias node.
 */
 bool Neuron::isBiasNode() {
   return m_biasNode();
@@ -183,6 +256,7 @@ bool Neuron::isBiasNode() {
    -----------------------------------------------------------------------------
    Check whether this node is an input node (without predecessors and not bias 
    node).
+   @returns - True iff neuron is an input node. 
 */
 bool Neuron::isInputNode() {
   if (isBiasNode()) return false;
@@ -192,9 +266,77 @@ bool Neuron::isInputNode() {
 /**
    -----------------------------------------------------------------------------
    Check whether this node is an output node (without ancestors).
+   @returns - True iff neuron is an output node.
 */
 bool Neuron::isOutputNode() {
   return (getNDownstreamConnections() == 0);
+}
+
+/**
+   -----------------------------------------------------------------------------
+   Set the response of this node. Mostly necessary for input nodes.
+   WARNING: Commented because it is not clear how to set the derivative here...
+   @param response - The new response of the Neuron.
+*/
+//void Neuron::setResponse(double response) {
+//  m_response = response;
+//  m_hasResponse = true;
+//}
+
+/**
+   -----------------------------------------------------------------------------
+   Set the response of this node. Mostly necessary for input nodes.
+   @param sum - The new sum of inputs to the Neuron.
+*/
+void Neuron::setResponseWithSum(double sum) {
+  m_response = thresholdFunction(sum);
+  m_responseDerivative = thresholdDerivative(sum);
+  m_hasResponse = true;
+}
+
+/**
+   -----------------------------------------------------------------------------
+   Set the target value. Note: This should only be done for output nodes.
+   @param target - The new target for the output.
+*/
+void Neuron::setTarget(double target) {
+  if (!isOutputNode()) {
+    std::cout << "Neuron: Question! Why set target for non-output node?"
+	      << std::endl;
+    exit(0);
+  }
+  if (target < -1.0 || target > 1.0) {
+    std::cout << "Neuron: ERROR! Target = " << target 
+	      << " is out of [-1,+1] bounds!" << std::endl;
+    exit(0);
+  }
+  m_target = target;
+}
+
+/**
+   -----------------------------------------------------------------------------
+   Evaluate the derivative of the specified threshold function for a given sum.
+   @param sum - The sum of weights of the input connections.
+   @returns - The derivative of the response for a given sum.
+*/
+double Neuron::thresholdDerivative(double sum) {
+  if (m_function == "sigmoid") {
+    return (thresholdFunction(sum) * (1.0 - thresholdFunction(sum)));
+  }
+  else if (m_function == "tanh") {
+    return (-1.0 * thresholdFunction(sum) * thresholdFunction(sum));
+  }
+  else if (m_function == "linear") {
+    return 1.0;
+  }
+  else if (m_function == "sine") {
+    return ((3.141592653/2.0) * thresholdFunction(1.0 - sum));
+  }
+  else {
+    std::cout << "Neuron: must define derivative for function " << m_function 
+	      << std::endl;
+    exit(0);
+  }
 }
 
 /**
@@ -203,23 +345,28 @@ bool Neuron::isOutputNode() {
    threshold functions are defined to be on an interval x:[-1,+1] with an output
    y:[-1,+1].
    @param sum - The sum of weights of the input connections.
-   @returns - The response for a given sum and function.
+   @returns - The response for a given sum.
 */
 double Neuron::thresholdFunction(double sum) {
-  double result = 0;
   if (m_function == "sigmoid") {
-    result = (2.0 / (1 + exp(-1.0*sum))) - 1.0;
+    return (1.0 / (1 + exp(-1.0*sum)));
   }
   else if (m_function == "tanh") {
-    result = (exp(sum) - exp(-1.0*sum)) / (exp(sum) + exp(-1.0*sum));
+    return ((exp(sum) - exp(-1.0*sum)) / (exp(sum) + exp(-1.0*sum)));
   }
   else if (m_function == "linear") {
     if (sum < -1.0) return -1.0;
     else if (sum > 1.0) return 1.0;
     else return sum;
   }
-  else {
-    std::cout << "Neuron: Improperly assigned threshold function!" << std::endl;
+  else if (m_function == "sine") {
+    if (sum < 1.0) return -1.0;
+    else if (sum > 1.0) return 1.0;
+    else return sin(3.141592653*sum/2.0);
   }
-  return result;
+  else {
+    std::cout << "Neuron: improperly assigned threshold function " << m_function
+	      << std::endl;
+    exit(0);
+  }
 }
