@@ -30,7 +30,7 @@ class Axon {
   double getWeight();
   
   // Public Mutators:
-  void setLearningRate(double alpha);
+  void setLearningRate(double rate);
   void setOriginNeuron(Neuron *neuron);
   void setTerminalNeuron(Neuron *neuron);
   void setWeight(double weight);

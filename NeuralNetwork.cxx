@@ -17,6 +17,15 @@
 //  - back-propagation                                                        //
 //  - ?                                                                       //
 //                                                                            //
+//  Note: need to think about how to train a network using many events and    //
+//  not just one at a time. In particular, how to track a group of responses. //
+//  Maybe have a response library for each node, which has to be cleared      //
+//  independently? Maybe the response library should just be a sum that is    //
+//  stored.                                                                   //
+//                                                                            //
+//  Note: For the moment, train on single event at a time. Stochastic? See    //
+//  wikipedia for inspiration.                                                //
+//                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "NeuralNetwork.h"
@@ -80,6 +89,28 @@ void NeuralNetwork::addLayer(int layerIndex, int nodesPerLayer,
 
 /**
    -----------------------------------------------------------------------------
+   Clear the responses of all Neurons in the network.
+*/
+void NeuralNetwork::clearNetworkResponse() {
+  for (std::vector<Neuron*>::iterator neuroIter = m_neurons.begin();
+       neuroIter != m_neurons.end(); neuroIter++) {
+    neuroIter->clearResponse();
+  }
+}
+
+/**
+   -----------------------------------------------------------------------------
+   Clear the response sums of all Neurons in the network.
+*/
+//void NeuralNetwork::clearNetworkResponseSum() {
+//  for (std::vector<Neuron*>::iterator neuroIter = m_neurons.begin();
+//       neuroIter != m_neurons.end(); neuroIter++) {
+//    neuroIter->clearResponseSum();
+//  }
+//}
+
+/**
+   -----------------------------------------------------------------------------
    Get the Neurons that are bias nodes.
 */
 std::vector<Neuron*> NeuralNetwork::getBiasNodes() {
@@ -139,13 +170,8 @@ std::vector<double> NeuralNetwork::getNetworkResponse(std::vector<double> vars){
 
   std::vector<double> result; result.clear();
   
-  // First clear the responses in the network. It is recursive, so only need to
-  // call on the output nodes, and they will propagate it upstream to ancestors:
-  std::vector<Neuron*> outputLayer = getOutputLayer();
-  for (std::vector<Neuron*>::iterator neuroIter = outputLayer.begin();
-       neuroIter != outputLayer.end(); neuroIter++) {
-    neuroIter->clearResponse();
-  }
+  // First clear the responses in the network.
+  clearNetworkResponse();
   
   // Then set input layer responses using input variables:
   std::vector<Neuron*> inputLayer = getInputLayer();
@@ -180,10 +206,24 @@ void NeuralNetwork::randomizeNetworkWeights() {
   // Loop over the axons:
   for (std::vector<Axon*>::iterator axonIter = m_axons.begin();
        axonIter != m_axons.end(); axonIter++) {
-    // for each, assign a random weight between -1 and 1:
+    // for each, assign a random weight between -0.5 and 0.5:
     int randInt = rand() % 100;// [0,99]
-    double normalizedRand = (double)(randInt - 50)/50.0;
+    double normalizedRand = ((double)(randInt - 50.0))/100.0;
     axonIter->setWeight(normalizedRand);
+  }
+}
+
+/**
+   -----------------------------------------------------------------------------
+   Set how quickly the network should pursue the gradient descent direction. 
+   change in W_ij = - rate * (deltaE / deltaW_ij). Changes the value of the rate
+   for all connections (Axons) in the network.
+   @param rate - The rate in the formula above for gradient descent.
+*/
+void NeuralNetwork::setNetworkLearningRate(double rate) {
+  for (std::vector<Axon*>::iterator axonIter = m_axons.begin();
+       axonIter != m_axons.end(); axonIter++) {
+    axonIter->setLearningRate(rate);
   }
 }
 

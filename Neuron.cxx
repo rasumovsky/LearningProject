@@ -26,6 +26,7 @@ Neuron::Neuron(int layerIndex, std::string function) {
   m_hasResponse = false;
   m_response = 0.0;
   m_responseDerivative = 0.0;
+  //m_sumOfResponses = 0.0;
   m_hasDelta = false;
   m_delta = 0.0;
   m_downstreamConnections.clear();
@@ -135,28 +136,28 @@ void Neruon::clearDelta() {
 
 /**
    -----------------------------------------------------------------------------
-   Clears the response information, which is only stored for speed. Note: this
-   algorithm is recursive. It will clear the response for all upstream
-   (ancestor) Neurons.
+   Clears the response information, which is stored for speed.
 */
 void Neuron::clearResponse() {
-  if (m_hasResponse) {
-    m_hasResponse = false;
-    m_response = 0.0;
-    m_responseDerivative = 0.0;
-    // Then recursively clear ancestor Neurons' responses. 
-    std::vector<Axon*> ancestorConnections = getUpstreamConnections();
-    for (std::vector<Axon*>::iterator axonIter = ancestorConnections.begin();
-	 axonIter != ancestorConnections.end(); axonIter++) {
-      axonIter->getOriginNeuron()->clearResponse();
-    }
-  }    
+  m_hasResponse = false;
+  m_response = 0.0;
+  m_responseDerivative = 0.0;
 }
+
+/**
+   -----------------------------------------------------------------------------
+   Clears the response sum information, which is stored for speed.
+*/
+//void Neuron::clearResponseSum() {
+//  m_sumOfResponses = 0.0;
+//}
 
 /**
    -----------------------------------------------------------------------------
    Get the delta value associated with this Neuron for back-propagation. Relies
    on the downstream connection weights and downstream connection deltas.
+   
+   MUST BE MODIFIED TO USE SUM! AND SUM FOR DERIVATIVE!
 */
 double Neuron::getDelta() {
   m_delta = 0.0;
@@ -219,31 +220,36 @@ int Neuron::getNUpstreamConnections() {
    for input nodes, and is variable for all other nodes. 
 */
 double Neuron::getResponse() {
-  if (isBiasNode()) {
-    m_response = 1.0;
-    m_responseDerivative = 0.0;
-  }
-  else if (isInputNode()) {
-    if (!m_hasResponse) {
-      std::cout << "Neuron: Error! Input node response undefined." << std::endl;
+  if (!m_hasResponse) {
+    // Set the response to 1 for bias nodes:
+    if (isBiasNode()) {
+      m_response = 1.0;
+      m_responseDerivative = 0.0;
+      //m_sumOfResponses += 1.0;
+    }
+    // If the input node doesn't have a response, exit.
+    else if (isInputNode()) {
+      std::cout << "Neuron: Error! Input node response undefined!" << std::endl;
       exit(0);
+    }  
+    // Calculate new response:
+    else {
+      double currSum = 0.0;
+      // Loop over input connections
+      for (std::vector<Axon*>::iterator axonIter =m_upstreamConnections.begin();
+	   axonIter != m_upstreamConnections.end(); axonIter++) {
+	// sum the input weights:
+	double inputWeight = axonIter->getWeight();
+	double inputResponse = axonIter->getOriginNeuron()->getResponse();
+	currSum += (inputWeight * inputResponse);
+      }
+      // Then get the result of the threshold function:
+      m_response = thresholdFunction(currSum);
+      m_responseDerivative = thresholdDerivative(currSum);
+      //m_sumOfResponses += currSum;
     }
+    m_hasResponse = true;
   }
-  else if (!m_hasResponse) {
-    double currSum = 0.0;
-    // Loop over input connections
-    for (std::vector<Axon*>::iterator axonIter = m_upstreamConnections.begin();
-	 axonIter != m_upstreamConnections.end(); axonIter++) {
-      // sum the input weights:
-      double inputWeight = axonIter->getWeight();
-      double inputResponse = axonIter->getOriginNeuron()->getResponse();
-      currSum += (inputWeight * inputResponse);
-    }
-    // Then get the result of the threshold function:
-    m_response = thresholdFunction(currSum);
-    m_responseDerivative = thresholdDerivative(currSum);
-  }
-  m_hasResponse = true;
   return m_response;
 }
 

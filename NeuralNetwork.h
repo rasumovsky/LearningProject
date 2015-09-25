@@ -37,8 +37,11 @@ class NeuralNetwork
   
   // Mutators:
   void addLayer(int layerIndex, int nodesPerLayer, string function);
+  void clearNetworkResponse();
+  void clearNetworkResponseSum();
   std::vector<double> getNetworkResponse(std::vector<double> vars);
   void randomizeNetworkWeights();
+  void setNetworkLearningRate(double rate);
   void setNetworkTargets(std::vector<double> targets);
   void updateNetworkViaBP();
 

@@ -45,6 +45,7 @@ class Neuron {
   void backPropagation();
   void clearDelta();
   void clearResponse();
+  //void clearResponseSum();
   void setBiasNode(bool biasNode);
   void setLayerIndex(int layerIndex);
   void setResponse(double response);
@@ -66,6 +67,7 @@ class Neuron {
   bool m_hasResponse;
   double m_response;
   double m_responseDerivative;
+  //double m_sumOfResponses;
   bool m_hasDelta;
   double m_delta;
   
