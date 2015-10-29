@@ -47,7 +47,8 @@ NeuralNetwork::NeuralNetwork(int nInputs, int nOutputs, int nHiddenLayers,
   m_neurons.clear();
   
   // Add the first (visible) layer:
-  addLayer(0, m_nInputs, "linear");  
+  addLayer(0, m_nInputs, "linear"); 
+  
   // Hidden layer indices start at 1:
   for (int i_i = 1; i_i <= m_nHiddenLayers; i_i++) {
     addLayer(i_i, m_nNodesPerLayer, "sigmoid");
@@ -64,7 +65,7 @@ NeuralNetwork::NeuralNetwork(int nInputs, int nOutputs, int nHiddenLayers,
    @param nodesPerLayer - The number of nodes per hidden layer.
 */
 void NeuralNetwork::addLayer(int layerIndex, int nodesPerLayer, 
-			     string function) {
+			     std::string function) {
   for (int i_n = 0; i_n < nodesPerLayer; i_n++) {
     Neuron *currNeuron = new Neuron(layerIndex, function);
     if (layerIndex > 0) {
@@ -94,7 +95,7 @@ void NeuralNetwork::addLayer(int layerIndex, int nodesPerLayer,
 void NeuralNetwork::clearNetworkResponse() {
   for (std::vector<Neuron*>::iterator neuroIter = m_neurons.begin();
        neuroIter != m_neurons.end(); neuroIter++) {
-    neuroIter->clearResponse();
+    (*neuroIter)->clearResponse();
   }
 }
 
@@ -117,8 +118,8 @@ std::vector<Neuron*> NeuralNetwork::getBiasNodes() {
   std::vector<Neuron*> result; result.clear();
   for (std::vector<Neuron*>::iterator neuroIter = m_neurons.begin(); 
        neuroIter != m_neurons.end(); neuroIter++) {
-    if (neuroIter->isBiasNode()) {
-      result.push_back(neuroIter);
+    if ((*neuroIter)->isBiasNode()) {
+      result.push_back(*neuroIter);
     }
   }
   return result;
@@ -137,7 +138,7 @@ std::vector<Neuron*> NeuralNetwork::getInputLayer() {
    Get the Neurons in the output layer.
 */
 std::vector<Neuron*> NeuralNetwork::getOutputLayer() {
-  return layer(m_nHiddenLayers+1);
+  return getLayer(m_nHiddenLayers+1);
 }
 
 /**
@@ -151,7 +152,9 @@ std::vector<Neuron*> NeuralNetwork::getLayer(int layerIndex) {
   // Loop over all neurons stored and return the ones with the proper layer idx.
   for (std::vector<Neuron*>::iterator neuroIter = m_neurons.begin();
        neuroIter != m_neurons.end(); neuroIter++) {
-    if (neuroIter->getLayerIndex() == layerIndex) layer.push_back(neuroIter);
+    if ((*neuroIter)->getLayerIndex() == layerIndex) {
+      layer.push_back(*neuroIter);
+    }
   }
   return layer;
 }
@@ -181,9 +184,10 @@ std::vector<double> NeuralNetwork::getNetworkResponse(std::vector<double> vars){
   
   // Then get the responses of the output layer. Again, this algorithm is
   // recursive, so you only need to call it on the output layers.
+  std::vector<Neuron*> outputLayer = getOutputLayer();
   for (std::vector<Neuron*>::iterator neuroIter = outputLayer.begin();
        neuroIter != outputLayer.end(); neuroIter++) {
-    result.push_back(neuroIter->getResponse());
+    result.push_back((*neuroIter)->getResponse());
   }
   
   // Check that output vector is correct size before returning:
@@ -209,7 +213,7 @@ void NeuralNetwork::randomizeNetworkWeights() {
     // for each, assign a random weight between -0.5 and 0.5:
     int randInt = rand() % 100;// [0,99]
     double normalizedRand = ((double)(randInt - 50.0))/100.0;
-    axonIter->setWeight(normalizedRand);
+    (*axonIter)->setWeight(normalizedRand);
   }
 }
 
@@ -223,7 +227,7 @@ void NeuralNetwork::randomizeNetworkWeights() {
 void NeuralNetwork::setNetworkLearningRate(double rate) {
   for (std::vector<Axon*>::iterator axonIter = m_axons.begin();
        axonIter != m_axons.end(); axonIter++) {
-    axonIter->setLearningRate(rate);
+    (*axonIter)->setLearningRate(rate);
   }
 }
 
@@ -257,14 +261,14 @@ void NeuralNetwork::updateNetworkViaBP() {
   std::vector<Neuron*> inputLayer = getInputLayer();
   for (std::vector<Neuron*>::iterator neuroIter = inputLayer.begin(); 
        neuroIter != inputLayer.end(); neuroIter++) {
-    neuroIter->clearDelta();
+    (*neuroIter)->clearDelta();
   }
   
   // Then clear deltas for bias nodes (technically might not be necessary):
   std::vector<Neuron*> biasNodes = getBiasNodes();
   for (std::vector<Neuron*>::iterator neuroIter = biasNodes.begin(); 
        neuroIter != biasNodes.end(); neuroIter++) {
-    neuroIter->clearDelta();
+    (*neuroIter)->clearDelta();
   }
   
   // Finally call back-propagation algorithm, which is recursive. It finds all
@@ -276,6 +280,6 @@ void NeuralNetwork::updateNetworkViaBP() {
   std::vector<Neuron*> outputLayer = getOutputLayer();
   for (std::vector<Neuron*>::iterator neuroIter = outputLayer.begin(); 
        neuroIter != outputLayer.end(); neuroIter++) {
-    neuroIter->backPropagation();
+    (*neuroIter)->backPropagation();
   }
 }

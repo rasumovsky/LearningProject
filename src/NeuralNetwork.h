@@ -12,13 +12,13 @@
 #ifndef NeuralNetwork_h
 #define NeuralNetwork_h
 
+#include "Axon.h"
+#include "Neuron.h"
 #include <cstdlib>
 #include <stdlib.h>
 #include <stdio.h>
 #include <vector>
 #include <math.h>
-#include "Axon.h"
-#include "Neuron.h"
 
 class NeuralNetwork 
 {
@@ -36,7 +36,7 @@ class NeuralNetwork
   std::vector<Neuron*> getLayer(int layerIndex);
   
   // Mutators:
-  void addLayer(int layerIndex, int nodesPerLayer, string function);
+  void addLayer(int layerIndex, int nodesPerLayer, std::string function);
   void clearNetworkResponse();
   void clearNetworkResponseSum();
   std::vector<double> getNetworkResponse(std::vector<double> vars);

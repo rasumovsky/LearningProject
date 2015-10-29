@@ -12,15 +12,17 @@
 #ifndef Axon_h
 #define Axon_h
 
+#include "Neuron.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "Neuron.h"
+
+class Neuron;
 
 class Axon {
   
  public:
   
-  Axon(double weight, Neuron *originNeuron, Neuron *terminalNeuron);
+  Axon(double weight, Neuron* originNeuron, Neuron* terminalNeuron);
   ~Axon();
   
   // Public Accessors:

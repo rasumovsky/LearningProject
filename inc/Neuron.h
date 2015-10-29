@@ -12,11 +12,16 @@
 #ifndef Neuron_h
 #define Neuron_h
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <vector>
-#include <math.h>
 #include "Axon.h"
+#include <iostream>
+#include <fstream>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <vector>
+
+class Axon;
 
 class Neuron {
   
@@ -29,6 +34,7 @@ class Neuron {
   double getDelta();
   int getLayerIndex();
   double getResponse();
+  double getResponseDerivative();
   int getNDownstreamConnections();
   int getNUpstreamConnections();
   std::vector<Axon*> getDownstreamConnections();
@@ -63,6 +69,7 @@ class Neuron {
   std::vector<Axon*> m_upstreamConnections;
   std::string m_function;
   
+  int m_layerIndex;
   bool m_biasNode;
   bool m_hasResponse;
   double m_response;
@@ -70,7 +77,7 @@ class Neuron {
   //double m_sumOfResponses;
   bool m_hasDelta;
   double m_delta;
-  
+  double m_target;
 };
 
 #endif

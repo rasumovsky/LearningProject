@@ -33,6 +33,7 @@ Neuron::Neuron(int layerIndex, std::string function) {
   m_upstreamConnections.clear();
   m_function = function;
   m_target = 0.0;
+  setLayerIndex(layerIndex);
   return;
 }
 
@@ -46,7 +47,7 @@ void Neuron::addDownstreamConnection(Axon *axon) {
     std::cout << "Neuron: ERROR! axon is null" << std::endl;
     exit(0);
   }
-  m_downstreamConnections->push_back(axon);
+  m_downstreamConnections.push_back(axon);
 }
 
 /**
@@ -77,7 +78,7 @@ void Neuron::addUpstreamConnection(Axon *axon) {
     exit(0);
   }
   else {
-    m_upstreamConnections->push_back(axon);
+    m_upstreamConnections.push_back(axon);
   }
 }
 
@@ -101,7 +102,7 @@ void Neuron::addUpstreamConnection(std::vector<Axon*> axons) {
    deltas for the following graph. Flags prevent duplication of calculation and
    also conflicts arising from weight reassignment. 
 */
-void backPropagation() {
+void Neuron::backPropagation() {
   if (isBiasNode() || isInputNode()) {
     getDelta();
   }
@@ -110,7 +111,7 @@ void backPropagation() {
     // Then update the weights for the following connections.
     for (std::vector<Axon*>::iterator axonIter = m_upstreamConnections.begin(); 
 	 axonIter != m_upstreamConnections.end(); axonIter++) {
-      axonIter->getOriginNeuron()->backPropagation();
+      ((*axonIter)->getOriginNeuron())->backPropagation();
     }
   }
 }
@@ -121,7 +122,7 @@ void backPropagation() {
    algorithm is recursive. It will clear the delta values for all downstream 
    (predecessor) Neurons.
 */
-void Neruon::clearDelta() {
+void Neuron::clearDelta() {
   if (m_hasDelta) {
     m_hasDelta = false;
     m_delta = 0.0;
@@ -129,7 +130,7 @@ void Neruon::clearDelta() {
     std::vector<Axon*> predecessorConnections = getDownstreamConnections();
     for (std::vector<Axon*>::iterator axonIter = predecessorConnections.begin();
 	 axonIter != predecessorConnections.end(); axonIter++) {
-      axonIter->getTerminalNeuron()->clearDelta();
+      ((*axonIter)->getTerminalNeuron())->clearDelta();
     }
   }
 }
@@ -184,7 +185,7 @@ double Neuron::getDelta() {
   // Then update the downstream weights:
   for (std::vector<Axon*>::iterator axonIter = m_downstreamConnections.begin(); 
        axonIter != m_downstreamConnections.end(); axonIter++) {
-    axonIter->trainWeight();
+    (*axonIter)->trainWeight();
   }
   return m_delta;
 }
@@ -195,6 +196,15 @@ double Neuron::getDelta() {
 */
 std::vector<Axon*> Neuron::getDownstreamConnections() {
   return m_downstreamConnections;
+}
+
+/**
+   -----------------------------------------------------------------------------
+   Get the layer index.
+   @returns - The layer index.
+*/
+int Neuron::getLayerIndex() {
+  return m_layerIndex;
 }
 
 /**
@@ -239,8 +249,8 @@ double Neuron::getResponse() {
       for (std::vector<Axon*>::iterator axonIter =m_upstreamConnections.begin();
 	   axonIter != m_upstreamConnections.end(); axonIter++) {
 	// sum the input weights:
-	double inputWeight = axonIter->getWeight();
-	double inputResponse = axonIter->getOriginNeuron()->getResponse();
+	double inputWeight = (*axonIter)->getWeight();
+	double inputResponse = ((*axonIter)->getOriginNeuron())->getResponse();
 	currSum += (inputWeight * inputResponse);
       }
       // Then get the result of the threshold function:
@@ -260,7 +270,7 @@ double Neuron::getResponse() {
    recursive. 
 */
 double Neuron::getResponseDerivative() {
-  if (!m_hasResponse()) {
+  if (!m_hasResponse) {
     getResponse();
   }
   return m_responseDerivative;
@@ -280,7 +290,7 @@ std::vector<Axon*> Neuron::getUpstreamConnections() {
    @returns - True iff neuron is a bias node.
 */
 bool Neuron::isBiasNode() {
-  return m_biasNode();
+  return m_biasNode;
 }
 
 /**
@@ -310,6 +320,15 @@ bool Neuron::isOutputNode() {
 */
 void Neuron::setBiasNode(bool biasNode) {
   m_biasNode = biasNode;
+}
+
+/**
+   -----------------------------------------------------------------------------
+   Set the layer index.
+   @param layerIndex - The index of the layer.
+*/
+void Neuron::setLayerIndex(int layerIndex) {
+  m_layerIndex = layerIndex;
 }
 
 /**

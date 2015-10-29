@@ -116,4 +116,5 @@ double Axon::trainWeight() {
   double delta_j = m_terminalNeuron->getDelta();//delta_j
   double deltaW_ij = -1.0 * m_rate * delta_j * o_i;
   m_weight += deltaW_ij;
+  return m_weight;
 }
